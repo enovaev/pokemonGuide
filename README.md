@@ -2,7 +2,7 @@
 
 You can find any Pokemon and see its abilities :fish_cake:
 
-### [Demo on Heroku](https://timer-stopwatch-weather-react.herokuapp.com/) :point_left:
+### [Demo on Heroku](https://pokemonguide.herokuapp.com/) :point_left:
 
 - React
 - Ant Design
