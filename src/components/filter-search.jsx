@@ -27,13 +27,13 @@ class FilterSearch extends Component {
         selectType: "",
         loadingBtn: false,
         visDrawer: false,
+        loadingSearch: false
     }
 
     componentDidMount = () => {
         this.getPokemonAPI("type", type);
         this.getPokemonAPI("eggGroup", eggs);
         this.getPokemonAPI("arrPokemon", resType, limitPok);
-
     }
     getPokemonAPI = async (el, a, b = "", prop = "results") => {
         try {
@@ -50,7 +50,7 @@ class FilterSearch extends Component {
             const json = await response.json();
             this.setState({ pokemonDetals: json, loadingBtn: false });
         } catch (error) {
-            throw new Error("loading error")
+            throw new Error("loading error");
         }
     }
     changeGender = (e) => {
@@ -63,6 +63,7 @@ class FilterSearch extends Component {
         this.setState({ selectType: value });
     }
     clickFilter = async () => {
+        await this.setState({ loadingSearch: true })
         await this.getPokemonAPI("arrGender", "gender", this.state.selectGender, resGender);
         await this.getPokemonAPI("arrEggs", "egg-group", this.state.selectEggs, resEggs);
         await this.getPokemonAPI("arrType", "type", this.state.selectType, resType);
@@ -78,7 +79,13 @@ class FilterSearch extends Component {
                 (item1.name === item2.pokemon.name) && arr1.push(item1);
             }
         }
+        await this.loadingTimeout();
         this.setState({ arrEnd: arr1 });
+    }
+    loadingTimeout = () => {
+        setTimeout(() => {
+            this.setState({ loadingSearch: false })
+        }, 700);
     }
     clickSearch = (value) => {
         let result;
@@ -101,8 +108,54 @@ class FilterSearch extends Component {
     closeDrawer = () => {
         this.setState({ visDrawer: false })
     }
+    showContent = () => {
+        const { loadingSearch, arrEnd } = this.state;
+        return (!loadingSearch) ?
+            (arrEnd.length === 0) ?
+                <div className="main__content">
+                    <div className="main__message">not found</div>
+                </div> :
+                <div className="main__content">
+                    {arrEnd.map((item, index) =>
+                        <Button
+                            key={index}
+                            className="main__pokemon-item"
+                            onClick={this.clickPokemon}
+                            value={item.name}
+                            type="primary"
+                            size="large"
+                        >
+                            {item.name.toUpperCase()}
+                        </Button>
+                    )}
+                </div> :
+            <div className="main__content">
+                <div className="main__icon">
+                    <Icon className="icon" type="loading" />
+                </div>
+            </div>
+    }
+    renderDetals = () => {
+        const { pokemonDetals } = this.state;
+        return <div className="detals-content-media">
+            <div className="detals__container">
+                <div className="detals__content-inner">
+                    <div>Base experience</div>
+                    <div>{pokemonDetals.base_experience}</div>
+                </div>
+                <div className="detals__content-inner">
+                    <div>Height</div>
+                    <div>{pokemonDetals.height}</div>
+                </div>
+                <div className="detals__content-inner">
+                    <div>Weight</div>
+                    <div>{pokemonDetals.weight}</div>
+                </div>
+            </div>
+        </div>
+    }
     render() {
-        const { selectGender, type, eggGroup, arrEnd, pokemonDetals, visDrawer, loadingBtn,selectType,selectEggs } = this.state;
+        const { selectGender, type, eggGroup, pokemonDetals, visDrawer, loadingBtn, selectType, selectEggs } = this.state;
         return (
             <div className="global">
                 <div className="header">
@@ -121,15 +174,25 @@ class FilterSearch extends Component {
                             <div className="main__filter-select">
                                 <div className="main__filter-egg">
                                     <Select placeholder="Select egg-group" style={{ width: 170 }} onChange={this.selectEgggroup}>
-                                        {eggGroup.map((item) =>
-                                            <Option value={item.name}>{item.name}</Option>
+                                        {eggGroup.map((item,index) =>
+                                            <Option 
+                                                key = {index}
+                                                value={item.name}
+                                            >
+                                                {item.name}
+                                            </Option>
                                         )}
                                     </Select>
                                 </div>
                                 <div className="main__filter-type">
                                     <Select placeholder="Select type" style={{ width: 170 }} onChange={this.selectTypes}>
-                                        {type.map((item) =>
-                                            <Option value={item.name}>{item.name}</Option>
+                                        {type.map((item, index) =>
+                                            <Option
+                                                key = {index}
+                                                value={item.name}
+                                            >
+                                                {item.name}
+                                            </Option>
                                         )}
                                     </Select>
                                 </div>
@@ -141,33 +204,17 @@ class FilterSearch extends Component {
                                     <Radio value="genderless">genderless</Radio>
                                 </Radio.Group>
                             </div>
-                            <Button onClick={this.clickFilter} disabled = {(selectType===""||selectEggs==="")?"disabled":false}>Search</Button>
-
+                            <Button onClick={this.clickFilter} disabled={(selectType === "" || selectEggs === "") ? "disabled" : false}>Search</Button>
                         </div>
-                        {(arrEnd.length === 0)?
-                            <div className = "main__content">
-                                <div className = "main__message">not found</div>
-                            </div>:
-                            <div className="main__content">
-                                {arrEnd.map((item, index) =>
-                                    <Button
-                                        key={index}
-                                        className="main__pokemon-item"
-                                        onClick={this.clickPokemon}
-                                        value={item.name}
-                                        type="primary"
-                                        size="large"
-                                    >
-                                        {item.name.toUpperCase()}
-                                    </Button>
-                                )}
-                            </div>
-                        }
+                        {this.showContent()}
                         <Drawer
-                            title={<div>
-                                {pokemonDetals.name}
-                                <img width={100} src={pokemonDetals.sprites.front_default} alt="" />
-                            </div>}
+                            title={
+                                <div className="drawer__title">
+                                    {pokemonDetals.name}
+                                    <img src={pokemonDetals.sprites.front_default} alt="" />
+                                    {this.renderDetals()}
+                                </div>
+                            }
                             placement="bottom"
                             height={450}
                             closable={false}
@@ -194,22 +241,28 @@ class FilterSearch extends Component {
                                                 <div>{pokemonDetals.weight}</div>
                                             </div>
                                         </div>
-                                        <div className="detals__content">
-                                            <Card title="Stats" bordered={false}>{pokemonDetals.stats.map((item) =>
-                                                <div className="detals__content-inner">
-                                                    <div>{item.stat.name}</div>
-                                                    <div>{item.base_stat}</div>
-                                                </div>)}
+                                        <div className="detals__statist">
+                                            <Card title="Stats" bordered={false}>
+                                                {pokemonDetals.stats.map((item,index) =>
+                                                    <div key={index} className="detals__content-inner">
+                                                        <div>{item.stat.name}</div>
+                                                        <div>{item.base_stat}</div>
+                                                    </div>
+                                                )}
                                             </Card>
                                         </div>
-                                        <div className="detals__content">
-                                            <Card title="Abilities" bordered={false}>{pokemonDetals.abilities.map((item) =>
-                                                <div>{item.ability.name}</div>)}
+                                        <div className="detals__abilities">
+                                            <Card title="Abilities" bordered={false}>
+                                                {pokemonDetals.abilities.map((item,index) =>
+                                                    <div key={index}>{item.ability.name}</div>
+                                                )}
                                             </Card>
                                         </div>
-                                        <div className="detals__content">
-                                            <Card title="Type" bordered={false}>{pokemonDetals.types.map((item) =>
-                                                <div>{item.type.name}</div>)}
+                                        <div className="detals__type">
+                                            <Card title="Type" bordered={false}>
+                                                {pokemonDetals.types.map((item,index) =>
+                                                    <div key={index}>{item.type.name}</div>
+                                                )}
                                             </Card>
                                         </div>
                                     </div>
