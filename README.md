@@ -12,7 +12,7 @@ You can find any Pokemon and see its abilities :fish_cake:
 - REST API
 - Adaptive Web Design
 
-![pokemonGuide](pokemonGuide.png)
+![pokemonGuide](pokemonGuide.PNG)
 
 ### Getting Started
 Run the app:
